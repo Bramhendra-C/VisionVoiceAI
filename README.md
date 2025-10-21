@@ -1,78 +1,41 @@
-# VisionVoice AI Assistant
+#!/bin/bash
 
-![Python](https://img.shields.io/badge/Python-3.7%2B-blue.svg)
+# --- Configuration ---
+PYTHON_CMD="python3"
+VENV_DIR="venv"
+REQUIREMENTS_FILE="requirements.txt"
 
-A multi-functional assistant built in Python that combines a voice-controlled command center with real-time computer vision capabilities. This project provides a simple command-line menu to access different AI modules, including a versatile voice assistant and a face detection/focus tracker.
+# --- Helper Functions ---
+echo_info() {
+    echo "INFO: $1"
+}
 
-## Features
+echo_success() {
+    echo "✅ SUCCESS: $1"
+}
 
-### 🎤 Voice Assistant (`voice_assistant.py`)
+echo_error() {
+    echo "❌ ERROR: $1" >&2
+    exit 1
+}
 
-A smart assistant that can understand voice commands to perform various tasks:
+# --- Main Script ---
 
-* **Conversational:** Greets you based on the time of day, tells jokes (`pyjokes`), inspiring quotes, and fun facts.
-* **Information Retrieval:**
-    * Fetches summaries from **Wikipedia**.
-    * Searches **Google** and opens the results in your browser.
-    * Checks the current **time**.
-* **Actions:**
-    * Plays any video/song on **YouTube** (`pywhatkit`).
-    * Fetches real-time **weather** for any city (using OpenWeatherMap API).
-* **Music Control:**
-    * Controls local music playback using `pygame` (pause, resume, volume up/down).
-    * Includes a *placeholder* function to download audio from YouTube. (See configuration to enable this).
+# 1. Check for Python 3
+if ! command -v $PYTHON_CMD &> /dev/null; then
+    echo_error "$PYTHON_CMD could not be found. Please install Python 3."
+fi
+echo_info "Python 3 found."
 
-**Note:** The assistant is currently set to use text input for easy testing. To enable real voice commands, open `voice_assistant.py` and swap these two lines:
-```python
-#query = take_command()
-query = input("You : ").lower()  # For testing without voice input
-...to this:
+# 2. Check for pip
+if ! $PYTHON_CMD -m pip --version &> /dev/null; then
+    echo_error "pip for $PYTHON_CMD could not be found. Please ensure pip is installed."
+fi
+echo_info "pip found."
 
-Python
-
-query = take_command()
-#query = input("You : ").lower()  # For testing without voice input
-📸 Computer Vision (face.py)
-Uses your webcam for real-time video processing with OpenCV:
-
-Face Detection: A simple mode that detects faces in real-time and draws a green bounding box around them.
-
-Face Unfocus Counter: A "focus mode" tool.
-
-When a face is detected, it shows a "FOCUSED" status with a green border.
-
-When a face is not detected (i.e., you look away), it shows an "UNFOCUSED" status with a red border and increments a counter.
-
-Setup and Installation
-Follow these steps to get the project running on your local machine.
-
-1. Prerequisites
-Python 3.7 or newer
-
-A microphone (for the voice assistant)
-
-A webcam (for the face detection)
-
-2. Clone the Repository
-
-# Replace with your actual repository URL
-git clone [https://github.com/your-username/your-repository-name.git](https://github.com/your-username/your-repository-name.git)
-cd your-repository-name
-3. Create a Virtual Environment (Recommended)
-Bash
-
-# For Windows
-python -m venv venv
-.\venv\Scripts\activate
-
-# For macOS/Linux
-python3 -m venv venv
-source venv/bin/activate
-4. Install Dependencies
-You will need to create a requirements.txt file for these packages.
-
-requirements.txt
-
+# 3. Create requirements.txt
+echo_info "Creating $REQUIREMENTS_FILE..."
+cat > $REQUIREMENTS_FILE << EOL
 opencv-python
 speechrecognition
 pyaudio
@@ -82,66 +45,48 @@ pyttsx3
 wikipedia
 pyjokes
 requests
-Install them all with one command:
+EOL
+echo_success "$REQUIREMENTS_FILE created."
 
-pip install -r requirements.txt
-Note: pyaudio can sometimes be difficult to install. If you have trouble, try installing it manually via pipwin (pip install pipwin && pipwin install pyaudio) or by downloading the wheel file for your system.
+# 4. Create Virtual Environment
+if [ -d "$VENV_DIR" ]; then
+    echo_info "Virtual environment '$VENV_DIR' already exists."
+else
+    echo_info "Creating virtual environment at '$VENV_DIR'..."
+    $PYTHON_CMD -m venv $VENV_DIR
+    if [ $? -ne 0 ]; then
+        echo_error "Failed to create virtual environment."
+    fi
+    echo_success "Virtual environment created."
+fi
 
-⚠️ Important Configuration
-Before you can use all features, you must configure the voice_assistant.py file.
+# 5. Install Dependencies into VENV
+echo_info "Installing dependencies from $REQUIREMENTS_FILE into $VENV_DIR..."
+# Activate the venv and install
+source $VENV_DIR/bin/activate
+pip install -r $REQUIREMENTS_FILE
 
-1. Get an OpenWeatherMap API Key
-The weather feature will not work without a valid API key.
+if [ $? -ne 0 ]; then
+    echo_error "Failed to install dependencies. Please check for errors above."
+fi
+deactivate
+echo_success "All dependencies installed."
 
-Go to OpenWeatherMap.org and create a free account.
-
-Navigate to the "API keys" tab and copy your default key.
-
-Open voice_assistant.py and paste your key into the OPENWEATHERMAP_API_KEY variable (line 20):
-
-Python
-
-# BEFORE
-OPENWEATHERMAP_API_KEY = "80590db90b5686dc7b68057edb05d6ec"
-
-# AFTER (example)
-OPENWEATHERMAP_API_KEY = "your_actual_api_key_paste_it_here"
-2. Set Your Music Directory
-The play online command is designed to download and save music. You must specify a folder where these files should be saved.
-
-Open voice_assistant.py and find the MUSIC_DIR variable (line 21):
-
-Change the placeholder path to a real folder on your computer.
-
-Python
-
-# BEFORE
-MUSIC_DIR = "path/to/your/music_folder"
-
-# AFTER (Windows example)
-MUSIC_DIR = "C:/Users/YourName/Music/AssistantDownloads"
-
-# AFTER (macOS/Linux example)
-MUSIC_DIR = "/home/YourName/Music/AssistantDownloads"
-3. (Optional) Enable YouTube Downloads
-The function download_and_play_youtube_audio is currently a placeholder. To make it work, you need:
-
-Install yt_dlp: pip install yt_dlp
-
-Install ffmpeg: This is a system-level tool, not a Python package. You must download and install it and add it to your system's PATH.
-
-Uncomment the code: In voice_assistant.py, uncomment lines 106-126 (the example implementation).
-
-How to Run
-Once you have installed the dependencies and configured the API key, you can run the main application from your terminal:
-
-python start.py
-This will launch the main menu. Simply type the number of the feature you want to use and press Enter.
-
-1. Run Face Detection
-2. Get Face Unfocus Count
-3. Voice assistant
-4. Exit
-Select an option: 
-To exit the Face Detection or Unfocus Counter, press the 1 key.
-To exit the Voice Assistant, say "exit", "stop", or "bye" (or type it if you are in text mode).
+# 6. Final Instructions
+echo ""
+echo "--- 🚀 SETUP COMPLETE 🚀 ---"
+echo ""
+echo "Your project is almost ready. Just two more steps:"
+echo ""
+echo "1. CONFIGURE API KEYS:"
+echo "   Open 'voice_assistant.py' and set your API key and music folder:"
+echo "   - OPENWEATHERMAP_API_KEY = \"your_api_key_here\" (line 20)"
+echo "   - MUSIC_DIR = \"/path/to/your/music_folder\" (line 21)"
+echo ""
+echo "2. RUN THE APPLICATION:"
+echo "   First, activate the virtual environment:"
+echo "   source $VENV_DIR/bin/activate"
+echo ""
+echo "   Then, run the main script:"
+echo "   python3 start.py"
+echo ""
